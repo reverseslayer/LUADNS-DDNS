@@ -35,15 +35,20 @@ namespace LUADNS_DDNS {
                 lastPublicIP = currentIPRecord;
             }
             while (true) {
-                string PublicIP = LUAddns.getPublicIP();
-                Console.WriteLine("Checking if DNS is up to date");
-                WriteToFile(PublicIP);
-                if (PublicIP != lastPublicIP) {
-                    LUAddns.updateRecord(ZoneID, UserName, APIKEY, lastPublicIP, PublicIP);
-                    lastPublicIP = PublicIP;
-                    Console.WriteLine("The public IP has changed to : " + PublicIP);
-                } else {
-                    Console.WriteLine("The public IP is up to date");
+                try {
+                    string PublicIP = LUAddns.getPublicIP();
+                    Console.WriteLine("Checking if DNS is up to date");
+                    WriteToFile(PublicIP);
+                    if (PublicIP != lastPublicIP) {
+                        LUAddns.updateRecord(ZoneID, UserName, APIKEY, lastPublicIP, PublicIP);
+                        lastPublicIP = PublicIP;
+                        Console.WriteLine("The public IP has changed to : " + PublicIP);
+                    } else {
+                        Console.WriteLine("The public IP is up to date");
+                    }
+                }catch(Exception e) {
+                    Console.WriteLine("An error has occured : " + e.ToString());
+                    Console.WriteLine("Waiting till next update cycle to try again");
                 }
                 await Task.Delay(1000 * 60 * 60); // Sleep the thread for an hour
             }
