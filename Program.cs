@@ -9,17 +9,15 @@ using Newtonsoft.Json;
 namespace LUADNS_DDNS {
     class Program {
 
-        static string dir = Directory.GetCurrentDirectory();
-
-        static void WriteToFile(string input) {
-            using (FileStream file = File.OpenWrite(dir + "/lastip")) {
+        static void WriteToFile(string FilePath, string input) {
+            using (FileStream file = File.OpenWrite(FilePath + "/lastip")) {
                 byte[] data = Encoding.UTF8.GetBytes(input);
                 file.Write(data, 0, data.Length);
             }
         }
 
-        static string ReadFromFile() {
-            using (FileStream file = File.OpenRead(dir = "/lastip")) {
+        static string ReadFromFile(string FilePath) {
+            using (FileStream file = File.OpenRead(FilePath + "/lastip")) {
                 byte[] data = new byte[10000];
                 int bytesRead = file.Read(data);
                 return Encoding.UTF8.GetString(data.Sub(0, bytesRead));
@@ -28,9 +26,9 @@ namespace LUADNS_DDNS {
         }
 
         static string lastPublicIP = "";
-        static async Task DDNSUpdateThread(string ZoneID, string UserName, string APIKEY, string currentIPRecord) {
+        static async Task DDNSUpdateThread(string ZoneID, string UserName, string APIKEY, string currentIPRecord, string FilePath) {
             if (string.IsNullOrEmpty(currentIPRecord)) {
-                lastPublicIP = ReadFromFile();
+                lastPublicIP = ReadFromFile(FilePath);
             } else {
                 lastPublicIP = currentIPRecord;
             }
@@ -38,7 +36,7 @@ namespace LUADNS_DDNS {
                 try {
                     string PublicIP = await LUAddns.getPublicIPAsync();
                     Console.WriteLine("Checking if DNS is up to date");
-                    WriteToFile(PublicIP);
+                    WriteToFile(FilePath, PublicIP);
                     if (PublicIP != lastPublicIP) {
                         LUAddns.updateRecord(ZoneID, UserName, APIKEY, lastPublicIP, PublicIP);
                         lastPublicIP = PublicIP;
@@ -60,6 +58,7 @@ namespace LUADNS_DDNS {
             string UserName = "";
             string APIKEY = "";
             string publicIP = "";
+            string FilePath = "";
             int RecordID = 0;
 
             if (args.Length >= 3) {
@@ -73,6 +72,8 @@ namespace LUADNS_DDNS {
                         RecordID = Convert.ToInt32(args[i + 1]);
                     } else if (arg == "/a" || arg == "-a") {
                         publicIP = args[i + 1];
+                    } else if (arg == "/p" || arg == "-p") {
+                        FilePath = args[i + 1];
                     }
                 }
             }
@@ -98,7 +99,7 @@ namespace LUADNS_DDNS {
             }
 
             if (CMD.ToLower() == "ddns") {
-                Task x = DDNSUpdateThread(ZoneID, UserName, APIKEY, publicIP);
+                Task x = DDNSUpdateThread(ZoneID, UserName, APIKEY, publicIP, FilePath);
                 Task.WaitAll(x);
             }
 
@@ -110,22 +111,29 @@ LUADNS - DDNS driver
 Written by derek holloway
 
 Help:
-	luaddns Command ZoneID [/u UserName] [/k APIKey] [/i RecordID] [/a RecordIP]
-	-- Note : Record ID updates after each succesful record update
+	luaddns Command ZoneID [/u UserName] [/k APIKey] [/i RecordID] [/a RecordIP] [/p FolderPath]
+	    Command     - get, set, or ddns
+        ZoneID      - get it from the url https://api.luadns.com/zones/53755 where 53755 is the zone
+        APIKey      - get it from https://api.luadns.com/settings, scroll down to API Token
+        RecordID    - get it from running the command get first - NOTE: the record id changes every update
+        RecordIP    - This is the value of the A record
+        FolderPath  - This is the path of the folder you want to use to store logs and data
 
 Example:
 	Get the records
-		example: luaddns get 3 /u username /k 2523ab86fb8e8b8cb9
+		luaddns get 3 /u username /k 2523ab86fb8e8b8cb9
 
 	Set the record
-		example: luaddns set 3 /u username /k 2523ab86fb8e8b8cb9 /i 535333 /a 192.168.0.1
+		luaddns set 3 /u username /k 2523ab86fb8e8b8cb9 /i 535333 /a 192.168.0.1
 			- Sets the record 535333 to the ip 192.168.0.1
-		example: luaddns set 3 /u username /k 2523ab86fb8e8b8cb9 /i 535333
+		luaddns set 3 /u username /k 2523ab86fb8e8b8cb9 /i 535333
 			- Sets the record 535333 to the local computers public IP address
 		
 	Start DDNS updates
-		example: luaddns ddns 3 /u username /k 2523ab86fb8e8b8cb9 [/a 192.168.0.1]
+		luaddns ddns 3 /u username /k 2523ab86fb8e8b8cb9 /p C:\Users\public\LUADDNS /a 192.168.0.1
 			- Starts the ddns server updating the record with the contents that match the IP specified
+        luaddns ddns 3 /u username /k 2523ab86fb8e8b8cb9 /p C:\Users\public\LUADDNS
+            - Starts the ddns server updating the record with the contents that match the IP in the folder specified
 ");
 
             }
