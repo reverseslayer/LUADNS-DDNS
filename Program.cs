@@ -9,15 +9,41 @@ using Newtonsoft.Json;
 namespace LUADNS_DDNS {
     class Program {
 
+        static string dir = Directory.GetCurrentDirectory();
+
+        static void WriteToFile(string input) {
+            using (FileStream file = File.OpenWrite(dir + "/lastip")) {
+                byte[] data = Encoding.UTF8.GetBytes(input);
+                file.Write(data, 0, data.Length);
+            }
+        }
+
+        static string ReadFromFile() {
+            using (FileStream file = File.OpenRead(dir = "/lastip")) {
+                byte[] data = new byte[10000];
+                int bytesRead = file.Read(data);
+                return Encoding.UTF8.GetString(data.Sub(0, bytesRead));
+
+            }
+        }
+
         static string lastPublicIP = "";
         static async Task DDNSUpdateThread(string ZoneID, string UserName, string APIKEY, string currentIPRecord) {
-            lastPublicIP = currentIPRecord;
+            if (string.IsNullOrEmpty(currentIPRecord)) {
+                lastPublicIP = ReadFromFile();
+            } else {
+                lastPublicIP = currentIPRecord;
+            }
             while (true) {
                 string PublicIP = LUAddns.getPublicIP();
                 Console.WriteLine("Checking if DNS is up to date");
+                WriteToFile(PublicIP);
                 if (PublicIP != lastPublicIP) {
                     LUAddns.updateRecord(ZoneID, UserName, APIKEY, lastPublicIP, PublicIP);
                     lastPublicIP = PublicIP;
+                    Console.WriteLine("The public IP has changed to : " + PublicIP);
+                } else {
+                    Console.WriteLine("The public IP is up to date");
                 }
                 await Task.Delay(1000 * 60 * 60); // Sleep the thread for an hour
             }
@@ -99,6 +125,14 @@ Example:
 
             }
 
+        }
+    }
+
+    static class Extensions {
+        public static T[] Sub<T>(this T[] data, int index, int length) {
+            T[] result = new T[length];
+            Array.Copy(data, index, result, 0, length);
+            return result;
         }
     }
 }
