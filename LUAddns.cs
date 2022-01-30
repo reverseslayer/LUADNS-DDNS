@@ -76,6 +76,11 @@ namespace LUADNS_DDNS {
         public static string getPublicIP() {
             return new WebClient().DownloadString("https://ipv4.icanhazip.com/").TrimEnd();
         }
+
+        public static async Task<string> getPublicIPAsync() {
+            string x = await new WebClient().DownloadStringTaskAsync("https://ipv4.icanhazip.com/");
+            return x.TrimEnd();
+        }
     }
     
     public class ResponsePacket {

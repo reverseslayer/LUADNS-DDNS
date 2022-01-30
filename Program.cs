@@ -36,7 +36,7 @@ namespace LUADNS_DDNS {
             }
             while (true) {
                 try {
-                    string PublicIP = LUAddns.getPublicIP();
+                    string PublicIP = await LUAddns.getPublicIPAsync();
                     Console.WriteLine("Checking if DNS is up to date");
                     WriteToFile(PublicIP);
                     if (PublicIP != lastPublicIP) {
@@ -124,7 +124,7 @@ Example:
 			- Sets the record 535333 to the local computers public IP address
 		
 	Start DDNS updates
-		example: luaddns ddns 3 /u username /k 2523ab86fb8e8b8cb9 /a 192.168.0.1
+		example: luaddns ddns 3 /u username /k 2523ab86fb8e8b8cb9 [/a 192.168.0.1]
 			- Starts the ddns server updating the record with the contents that match the IP specified
 ");
 
